@@ -2,28 +2,25 @@
 // Find the 20 highest billed cast members
 // Analyze their gender, and aggregate
 
-// This function should run whenever a series or movie premieres
+// This function should run whenever a movie premieres
 
-// The output should be a Tweet like
+// The output should be a tweet like
 // Of the 20 top-billed cast members in Dunkirk (2017)...
-// < svg >
-// ... only 14 are female 
 // < bar chart >
-// < end svg >
 
 // We use this API
 // https://www.themoviedb.org
 
 // ***** //
 
-// Given a movie title, return it's cast members
-
 var rpn = require('request-promise-native'); 
 var _ = require('lodash'); 
 var fs = require('fs');
-const secrets = JSON.parse(fs.readFileSync('secrets.json', 'utf8'));
+var jsonfile = require('jsonfile');
+const secrets = require('./secrets.json'); 
 
-// REPLACE
+// const secrets = JSON.parse(fs.readFileSync('secrets.json', 'utf8'));
+
 const apikey = secrets.moviedb_apikey;
 
 // Get ID of a Movie given it's title
@@ -37,12 +34,13 @@ const getID = function(movieTitle) {
 		  	resolve({id: movie.id, title: movie.title, releaseDate: movie.release_date});
 		  })
 		  .catch(e => {
-		  	reject(`I could not find film information for ${movieTitle}.`);
+		  	reject(`I could not find film information for "${movieTitle}".`);
 		  });
 	})
 }
 
 // Given a cast member, get gender
+// Using the API specs
 const determineGender = function(gender) {
 	if (gender === 1) {
 		return 'Female';
@@ -52,6 +50,7 @@ const determineGender = function(gender) {
 	return 'N/A';
 }
 
+// Given a movie title, return it's cast members
 // If the movie doesn't have many people, we exclude it from our analysis
 // We keep only the top 20 billed people
 // But should this value expand to the entire cast (like if there are 50 folks, why not?)
@@ -74,7 +73,6 @@ const getCastFromId = function(movieId) {
 // const sampleData = [['Female', 6], ['Male', 6], ['N/A', 6]];
 
 var d3 = require('d3');
-// var fs = require('fs');
 
 const width = 320; // Need a 2:1 ratio
 const height = 160;
@@ -87,7 +85,7 @@ const generateCanvas = function(data, title, year, castMemberCount) {
     let ctx = canvas.getContext('2d');
     // ctx.scale(2, 2);
 
-    ctx.fillStyle = "rgba(250,239,209,1)";
+    // ctx.fillStyle = "rgba(250,239,209,1)";
     ctx.fillStyle = "white";
 
     ctx.fillRect(0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom);
@@ -111,6 +109,7 @@ const generateCanvas = function(data, title, year, castMemberCount) {
 
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
+    ctx.font = "10px 'Roboto'";
     xTicks.forEach(function(d) {
       ctx.fillText(d, xScale(d), height + 8);
     });
@@ -121,7 +120,7 @@ const generateCanvas = function(data, title, year, castMemberCount) {
     ctx.stroke();
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
-    ctx.font = "12px sans-serif";
+    ctx.font = "12px 'Roboto'";
 
     yScale.domain().forEach(function(d) {
       ctx.fillText(d, -12 + 0.5, yScale(d) + yScale.bandwidth() / 2  + 0.5);
@@ -140,17 +139,17 @@ const generateCanvas = function(data, title, year, castMemberCount) {
     ctx.save();
     ctx.textAlign = "right";
     ctx.textBaseline = "bottom";
-    ctx.font = "10px sans-serif";
+    ctx.font = "10px 'Roboto'";
     ctx.fillText(`Top ${castMemberCount} Billed Cast Members`, width, height - 4);
 
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
-    ctx.font = "16px sans-serif";
+    ctx.font = "16px 'Roboto'";
     ctx.fillText(`${title} (${year})`, width/2, -6);
 
     ctx.restore();
 
-    ctx.fillStyle = "rgb(116,160,137)";
+    // ctx.fillStyle = "rgb(116,160,137)";
     ctx.fillStyle = "rgb(180,15,32)";
 
     data.forEach(function(d) {
@@ -169,19 +168,18 @@ const generateCanvas = function(data, title, year, castMemberCount) {
 // Post the accompanying tweet on the day the movie is released
 
 const cron = require('node-cron');
-const releases = require('./releases.json'); // no need to add the .json extension
+const releases = require('./releases.json'); 
 var moment = require('moment');
 var Twit = require('twit');
 
 const releaseDates = _.toPairs(releases);
 
-// REPLACE
 const config = {
       twitter: {
-        consumer_key: "utVXLdYODGTXN2Y178Hvktihx",
-        consumer_secret: "9HNTOWzEfMbuNiiTtnysQhXIMnVNMNc5oxIxGmBaIPAtRXnGJb",
-        access_token: "868212681014038528-LwGe6UEwLAmvf93kBOGIU2qOM7Dewqv",
-        access_token_secret: "wPTMfR8AYizBdXcZogkJry9vkcqv0WzKDlJnc0dN4Hu0J"
+        consumer_key: secrets.consumer_key,
+        consumer_secret: secrets.consumer_secret,
+        access_token: secrets.access_key,
+        access_token_secret: secrets.access_secret
       }
     };
 const T = new Twit(config.twitter);
@@ -220,6 +218,11 @@ const postToTwitter = function(statusData) {
 		    if (statusData.replyTo && statusData.statusId) {
 			    params['status'] = `@${statusData.replyTo} ${status}`;
 			    params['in_reply_to_status_id'] = statusData.statusId;
+		    } else { // If we are posting to the main timeline, record that we've done so.
+				let postedMovies = require('./posted.json');
+				jsonfile.writeFile('posted.json', postedMovies.concat(statusData.movieId), function(err) {
+				  console.error(err)
+				})
 		    }
 		    T.post('statuses/update', params, function (err, data, response) {
 		      console.log("posted to twitter!")
@@ -227,7 +230,19 @@ const postToTwitter = function(statusData) {
 		  }
 		})
 	})
+}
 
+const checkIfPosted = function(statusData) {
+
+	// Check if the post has already been posted to the general timeline
+	// Only if the post isn't a replied to
+
+	let postedMovies = require('./posted.json');
+	if (_.indexOf(postedMovies, statusData.movieId) < 0) {
+		postToTwitter(statusData);
+	} else {
+		console.log(`${statusData.movieTitle} has already been posted to the main Twitter feed.`)
+	}
 }
 
 // cron.schedule('5 * * * * *', function() {
@@ -236,7 +251,7 @@ const postToTwitter = function(statusData) {
 //   	if (moment().isSame(moment(release[1]), 'day')) {
 
 
-		getID("Harry Potter deathly 2")
+		getID("batman begins")
 			.then((movie) => {
 				getCastFromId(movie.id)
 					.then(genders => {
@@ -250,7 +265,8 @@ const postToTwitter = function(statusData) {
 					      "dataUrl": dataUrl.split(",")[1],
 					      "movieId": movie.id
 					    }
-					    postToTwitter(statusData);
+					    console.log(dataUrl);
+					    checkIfPosted(statusData);
 					})
 					.catch(e => {
 						// Tweet saying that not enough data on cast members was found.
@@ -269,15 +285,16 @@ const postToTwitter = function(statusData) {
 
 // When a user mentions (@s) the bot in a tweet, respond with the relevant info
 
-// const giveErrorTweet = function(message, statusId, replyTo) {
-//   let params = { status: `@${replyTo} ${message}`, in_reply_to_status_id: statusId };
-//   T.post('statuses/update', params, function (err, data, response) {
-//     console.log("replied to someone with an error message!");
-//   })
-// }
+const giveErrorTweet = function(message, statusId, replyTo) {
+  let params = { status: `@${replyTo} ${message}`, in_reply_to_status_id: statusId };
+  T.post('statuses/update', params, function (err, data, response) {
+    console.log("replied to someone with an error message!");
+  })
+}
 
-// const username = '@lelebronbot';
+// const username = '@moviediversity';
 // var stream = T.stream('statuses/filter', { track: username });
+
 // stream.on('tweet', function (tweet) {
 //   let replyTo = tweet.user.screen_name;
 //   let statusId = tweet.id_str;
@@ -285,7 +302,7 @@ const postToTwitter = function(statusData) {
 
 //   // When mentioned, respond, but start with the username.
 //   getID(tweetText)
-// 	.then((movie) => {
+// 	  .then((movie) => {
 // 	    getCastFromId(movie.id)
 // 			.then(genders => {
 // 				let year = movie.releaseDate.split("-")[0];
@@ -296,11 +313,12 @@ const postToTwitter = function(statusData) {
 // 			      "movieYear": year,
 // 			      "breakdown": _.toPairs(genders),
 // 			      "dataUrl": dataUrl.split(",")[1],
-// 			      "movieId": movie.id,
-// 			      "replyTo": replyTo,
-// 			      "statusId": statusId
+// 			      "movieId": movie.id
 // 			    }
-// 			    postToTwitter(statusData);
+// 			    checkIfPosted(statusData);
+// 		        statusData["replyTo"] = replyTo;
+// 			    statusData["statusId"] = statusId;
+//   			postToTwitter(statusData); // Post again to the general timeline
 // 			})
 // 			.catch(e => {
 // 				// Tweet saying that not enough data on cast members was found.
@@ -312,15 +330,51 @@ const postToTwitter = function(statusData) {
 // 		giveErrorTweet(e, statusId, replyTo);
 // 	});
 
-// 	console.log(`tweet detected: ${tweet.text}, ${tweetText}`);
+//   console.log(`tweet detected: ${tweetText}`);
 
 // });
 
+//// ANALYSIS ////
+
+const getGenders = function(movieName) {
+	getID(movieName)
+			.then((movie) => {
+				getCastFromId(movie.id)
+					.then(genders => {
+					    console.log(movieName, genders);
+					})
+					.catch(e => {
+						// Tweet saying that not enough data on cast members was found.
+						console.log(movieName, e)
+					});
+			})
+			.catch(e => {
+				// Tweet saying that the movie was not found.
+				console.log(movieName, e)
+			})
+}
+
+// releaseDates.forEach((release, i) => {
+// 	setTimeout(o => getGenders(release[0]), i*5000);
+// })
+
+		// getID("batman begins")
+		// 	.then((movie) => {
+		// 		getCastFromId(movie.id)
+		// 			.then(genders => {
+		// 			    console.log(genders);
+		// 			})
+		// 			.catch(e => {
+		// 				// Tweet saying that not enough data on cast members was found.
+		// 				console.log("e3", e)
+		// 			});
+		// 	})
+		// 	.catch(e => {
+		// 		// Tweet saying that the movie was not found.
+		// 		console.log("e2", e)
+		// 	});
+
 // Todo: 
 // Figure out the 'most' female movie this year
-// Secrets.json
-// Font-family for canvas
-// Deploy on Digital Ocean
-	// Install Canvas, Cairo, etc. :(
 // Figure out a way to only post a movie once on its release date
-// Set up Twitter account
+// Figure out if someone retweets if thats a problem

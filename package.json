@@ -7,30 +7,17 @@
 		"start": "node server.js"
 	},
 	"dependencies": {
-		"btoa": "^1.1.2",
 		"canvas": "^1.6.6",
-		"canvg-fixed": "^1.0.0",
-		"canvgc": "^0.1.5",
-		"capitalize": "latest",
-		"corpora-project": "latest",
 		"d3": "^4.10.0",
-		"express": "^4.14.0",
-		"fabric": "^2.0.0-beta.4",
-		"form-data": "^2.2.0",
 		"fs": "latest",
-		"journalize": "latest",
-		"jsdom": "^11.1.0",
+		"jsonfile": "^3.0.1",
 		"lodash": "^4.17.4",
 		"moment": "^2.18.1",
-		"node-base64-image": "latest",
 		"node-cron": "^1.2.0",
 		"node-gyp": "^3.6.2",
-		"package.json": "^2.0.1",
 		"request": "latest",
 		"request-promise-native": "latest",
-		"svg2png": "^4.1.1",
-		"twit": "^2.2.9",
-		"xmldom": "^0.1.27"
+		"twit": "^2.2.9"
 	},
 	"engines": {
 		"node": "6.9.1"
