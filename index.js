@@ -221,7 +221,10 @@ const postToTwitter = function(statusData) {
 		    } else { // If we are posting to the main timeline, record that we've done so.
 				let postedMovies = require('./posted.json');
 				jsonfile.writeFile('posted.json', postedMovies.concat(statusData.movieId), function(err) {
-				  console.error(err)
+				  let errorMessage = _.isNull(err) 
+				  				   ? `Edited the already-posted json file.`
+				                   : `Could not write to already-posted json file because ${err}`;
+				  console.error(errorMessage);
 				})
 		    }
 		    T.post('statuses/update', params, function (err, data, response) {
@@ -251,7 +254,7 @@ const checkIfPosted = function(statusData) {
 //   	if (moment().isSame(moment(release[1]), 'day')) {
 
 
-		getID("batman begins")
+		getID("harry potter azkaban")
 			.then((movie) => {
 				getCastFromId(movie.id)
 					.then(genders => {
@@ -265,7 +268,7 @@ const checkIfPosted = function(statusData) {
 					      "dataUrl": dataUrl.split(",")[1],
 					      "movieId": movie.id
 					    }
-					    console.log(dataUrl);
+					    // console.log(dataUrl);
 					    checkIfPosted(statusData);
 					})
 					.catch(e => {
