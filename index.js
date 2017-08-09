@@ -19,8 +19,6 @@ var fs = require('fs');
 var jsonfile = require('jsonfile');
 const secrets = require('./secrets.json'); 
 
-// const secrets = JSON.parse(fs.readFileSync('secrets.json', 'utf8'));
-
 const apikey = secrets.moviedb_apikey;
 
 // Get ID of a Movie given it's title
@@ -168,11 +166,8 @@ const generateCanvas = function(data, title, year, castMemberCount) {
 // Post the accompanying tweet on the day the movie is released
 
 const cron = require('node-cron');
-const releases = require('./releases.json'); 
 var moment = require('moment');
 var Twit = require('twit');
-
-const releaseDates = _.toPairs(releases);
 
 const config = {
       twitter: {
@@ -219,8 +214,8 @@ const postToTwitter = function(statusData) {
 			    params['status'] = `@${statusData.replyTo} ${status}`;
 			    params['in_reply_to_status_id'] = statusData.statusId;
 		    } else { // If we are posting to the main timeline, record that we've done so.
-				let postedMovies = require('./posted.json');
-				jsonfile.writeFile('posted.json', postedMovies.concat(statusData.movieId), function(err) {
+				let postedMovies = JSON.parse(fs.readFileSync('posted.json', 'utf8'));
+				jsonfile.writeFile('posted.json', postedMovies.concat([[statusData.movieId, moment().format('L')]]), function(err) {
 				  let errorMessage = _.isNull(err) 
 				  				   ? `Edited the already-posted json file.`
 				                   : `Could not write to already-posted json file because ${err}`;
@@ -241,20 +236,29 @@ const checkIfPosted = function(statusData) {
 	// Only if the post isn't a replied to
 
 	let postedMovies = require('./posted.json');
-	if (_.indexOf(postedMovies, statusData.movieId) < 0) {
+	// [movieId, datePosted]
+	if (_.indexOf(postedMovies.map(x => x[0]), statusData.movieId) < 0) {
+		// Check if it's been posted
+		postToTwitter(statusData);
+	} else if (moment(_.filter(postedMovies.map(x => x[0]) == statusData.movieId)[1]).add(6, 'months').isBefore(moment())) {
+		// Check if it's been six months
+		console.log("The movie had already been posted, but it's been a while.")
 		postToTwitter(statusData);
 	} else {
 		console.log(`${statusData.movieTitle} has already been posted to the main Twitter feed.`)
 	}
 }
 
-// cron.schedule('5 * * * * *', function() {
+const releases = require('./releases.json'); 
+const releaseDates = _.toPairs(releases);
 
-//   releaseDates.forEach(release => {
-//   	if (moment().isSame(moment(release[1]), 'day')) {
+cron.schedule('0 0 0 * * *', function() {
 
+  releaseDates.forEach(release => {
+  	if (moment().isSame(moment(release[1]), 'day')) {
 
-		getID("harry potter azkaban")
+		getID(release[0])
+		getID("harry potter stone")
 			.then((movie) => {
 				getCastFromId(movie.id)
 					.then(genders => {
@@ -281,10 +285,10 @@ const checkIfPosted = function(statusData) {
 				console.log("e2", e)
 			});
 
-// 	};
-//   })
+	};
+  })
 
-// });
+});
 
 // When a user mentions (@s) the bot in a tweet, respond with the relevant info
 
@@ -295,89 +299,75 @@ const giveErrorTweet = function(message, statusId, replyTo) {
   })
 }
 
-// const username = '@moviediversity';
-// var stream = T.stream('statuses/filter', { track: username });
+const username = '@moviediversity';
+var stream = T.stream('statuses/filter', { track: username });
 
-// stream.on('tweet', function (tweet) {
-//   let replyTo = tweet.user.screen_name;
-//   let statusId = tweet.id_str;
-//   let tweetText = _.filter(tweet.text.split(" "), x => x.charAt(0) != '@').join(" ");
+stream.on('tweet', function (tweet) {
+  let replyTo = tweet.user.screen_name;
+  let statusId = tweet.id_str;
+  let tweetText = _.filter(tweet.text.split(" "), x => x.charAt(0) != '@').join(" ");
 
-//   // When mentioned, respond, but start with the username.
-//   getID(tweetText)
-// 	  .then((movie) => {
-// 	    getCastFromId(movie.id)
-// 			.then(genders => {
-// 				let year = movie.releaseDate.split("-")[0];
-// 				let dataUrl = generateCanvas(_.toPairs(genders), `${movie.title}`, year, castLimit);
-// 			    let statusData = {
-// 			      "castMemberCount": castLimit,
-// 			      "movieTitle": movie.title,
-// 			      "movieYear": year,
-// 			      "breakdown": _.toPairs(genders),
-// 			      "dataUrl": dataUrl.split(",")[1],
-// 			      "movieId": movie.id
-// 			    }
-// 			    checkIfPosted(statusData);
-// 		        statusData["replyTo"] = replyTo;
-// 			    statusData["statusId"] = statusId;
-//   			postToTwitter(statusData); // Post again to the general timeline
-// 			})
-// 			.catch(e => {
-// 				// Tweet saying that not enough data on cast members was found.
-// 				giveErrorTweet(e, statusId, replyTo);
-// 			});
-// 	})
-// 	.catch(e => {
-// 		// Tweet saying that the movie was not found.
-// 		giveErrorTweet(e, statusId, replyTo);
-// 	});
+  // When mentioned, respond, but start with the username.
+  getID(tweetText)
+	  .then((movie) => {
+	    getCastFromId(movie.id)
+			.then(genders => {
+				let year = movie.releaseDate.split("-")[0];
+				let dataUrl = generateCanvas(_.toPairs(genders), `${movie.title}`, year, castLimit);
+			    let statusData = {
+			      "castMemberCount": castLimit,
+			      "movieTitle": movie.title,
+			      "movieYear": year,
+			      "breakdown": _.toPairs(genders),
+			      "dataUrl": dataUrl.split(",")[1],
+			      "movieId": movie.id
+			    }
+			    checkIfPosted(statusData);
+		        statusData["replyTo"] = replyTo;
+			    statusData["statusId"] = statusId;
+  			postToTwitter(statusData); // Post again to the general timeline
+			})
+			.catch(e => {
+				// Tweet saying that not enough data on cast members was found.
+				giveErrorTweet(e, statusId, replyTo);
+			});
+	})
+	.catch(e => {
+		// Tweet saying that the movie was not found.
+		giveErrorTweet(e, statusId, replyTo);
+	});
 
-//   console.log(`tweet detected: ${tweetText}`);
+  console.log(`tweet detected: ${tweetText}`);
 
-// });
+});
 
 //// ANALYSIS ////
 
-const getGenders = function(movieName) {
-	getID(movieName)
-			.then((movie) => {
-				getCastFromId(movie.id)
-					.then(genders => {
-					    console.log(movieName, genders);
-					})
-					.catch(e => {
-						// Tweet saying that not enough data on cast members was found.
-						console.log(movieName, e)
-					});
-			})
-			.catch(e => {
-				// Tweet saying that the movie was not found.
-				console.log(movieName, e)
-			})
-}
+// const getGenders = function(movieName) {
+// 	getID(movieName)
+// 			.then((movie) => {
+// 				getCastFromId(movie.id)
+// 					.then(genders => {
+// 						genders["movieName"] = movieName;
+// 						let analyzedMovies = JSON.parse(fs.readFileSync('2017.json', 'utf8'));
+// 						jsonfile.writeFile('2017.json', analyzedMovies.concat([genders]));
+// 					    console.log(JSON.stringify(genders));
+// 					})
+// 					.catch(e => {
+// 						// Tweet saying that not enough data on cast members was found.
+// 						// console.log(movieName, e)
+// 					});
+// 			})
+// 			.catch(e => {
+// 				// Tweet saying that the movie was not found.
+// 				// console.log(movieName, e)
+// 			})
+// }
 
 // releaseDates.forEach((release, i) => {
 // 	setTimeout(o => getGenders(release[0]), i*5000);
 // })
 
-		// getID("batman begins")
-		// 	.then((movie) => {
-		// 		getCastFromId(movie.id)
-		// 			.then(genders => {
-		// 			    console.log(genders);
-		// 			})
-		// 			.catch(e => {
-		// 				// Tweet saying that not enough data on cast members was found.
-		// 				console.log("e3", e)
-		// 			});
-		// 	})
-		// 	.catch(e => {
-		// 		// Tweet saying that the movie was not found.
-		// 		console.log("e2", e)
-		// 	});
-
 // Todo: 
-// Figure out the 'most' female movie this year
-// Figure out a way to only post a movie once on its release date
-// Figure out if someone retweets if thats a problem
+// Readme
+// add na if there are none
