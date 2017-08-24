@@ -3,7 +3,7 @@
 
 Visit the bot `@moviediversity`.
 
-[Dunkirk as Example](dunkirk.jpg)
+![Dunkirk as Example](dunkirk.jpg)
 
 This is a Twitter bot that posts a bar chart of the breakdown by gender of movies. I grab the data from the Movie DB, a website similar to IMDB but with an API.
 
@@ -29,7 +29,7 @@ Credits
 =======
 
 [The Movie DB](https://www.themoviedb.org/documentation/api)
-[The Movie DB](themoviedb.png)
+![The Movie DB](themoviedb.png)
 
 Photo by Florian Klauer on Unsplash
 
