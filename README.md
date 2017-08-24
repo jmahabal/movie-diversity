@@ -28,8 +28,9 @@ The Future
 Credits
 =======
 
-[The Movie DB](https://www.themoviedb.org/documentation/api)
 ![The Movie DB](themoviedb.png)
+
+[The Movie DB](https://www.themoviedb.org/documentation/api)
 
 Photo by Florian Klauer on Unsplash
 
