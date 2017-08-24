@@ -235,7 +235,7 @@ const checkIfPosted = function(statusData) {
 	// Check if the post has already been posted to the general timeline
 	// Only if the post isn't a replied to
 
-	let postedMovies = require('./posted.json');
+	let postedMovies = JSON.parse(fs.readFileSync('posted.json', 'utf8'));
 	// [movieId, datePosted]
 	if (_.indexOf(postedMovies.map(x => x[0]), statusData.movieId) < 0) {
 		// Check if it's been posted
@@ -258,7 +258,7 @@ cron.schedule('0 0 0 * * *', function() {
   	if (moment().isSame(moment(release[1]), 'day')) {
 
 		getID(release[0])
-		getID("harry potter stone")
+		// getID("harry potter stone")
 			.then((movie) => {
 				getCastFromId(movie.id)
 					.then(genders => {
@@ -323,9 +323,10 @@ stream.on('tweet', function (tweet) {
 			      "movieId": movie.id
 			    }
 			    checkIfPosted(statusData);
-		        statusData["replyTo"] = replyTo;
-			    statusData["statusId"] = statusId;
-  			postToTwitter(statusData); // Post again to the general timeline
+			    replyToStatusData = JSON.parse(JSON.stringify(statusData))
+		        replyToStatusData["replyTo"] = replyTo;
+			    replyToStatusData["statusId"] = statusId;
+	  			postToTwitter(replyToStatusData); // Post again to the general timeline
 			})
 			.catch(e => {
 				// Tweet saying that not enough data on cast members was found.
@@ -371,3 +372,4 @@ stream.on('tweet', function (tweet) {
 // Todo: 
 // Readme
 // add na if there are none
+// make sure im grabbing the last date for a movie, not the first
