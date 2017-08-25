@@ -45,7 +45,7 @@ const determineGender = function(gender) {
 	} else if (gender === 2) {
 		return 'Male';
 	} 
-	return 'N/A';
+	return 'Unknown';
 }
 
 // Given a movie title, return it's cast members
@@ -68,13 +68,13 @@ const getCastFromId = function(movieId) {
 
 // To generate a gender bar graph we'll use D3
 // We need an object in the form:
-// const sampleData = [['Female', 6], ['Male', 6], ['N/A', 6]];
+// const sampleData = [['Female', 6], ['Male', 6], ['Unknown', 6]];
 
 var d3 = require('d3');
 
 const width = 320; // Need a 2:1 ratio
 const height = 160;
-const margin = {"top": 40, "bottom": 40, "right": 40, "left": 70};
+const margin = {"top": 40, "bottom": 40, "right": 40, "left": 85};
 
 const generateCanvas = function(data, title, year, castMemberCount) {
 
@@ -92,7 +92,7 @@ const generateCanvas = function(data, title, year, castMemberCount) {
     ctx.translate(margin.left + 0.5, margin.top + 0.5);
 
     let xScale = d3.scaleLinear().domain([0, castMemberCount]).range([0, width]);
-    let yScale = d3.scaleBand().domain(["Female", "Male", "N/A"]).range([0, height]).paddingOuter(0.3).paddingInner(0.3);
+    let yScale = d3.scaleBand().domain(["Female", "Male", "Unknown"]).range([0, height]).paddingOuter(0.3).paddingInner(0.3);
 
     let xTickCount = 5;
     let xTicks = xScale.ticks(xTickCount);
