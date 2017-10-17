@@ -17,9 +17,9 @@ var rpn = require('request-promise-native');
 var _ = require('lodash'); 
 var fs = require('fs');
 var jsonfile = require('jsonfile');
-const secrets = require('./secrets.json'); 
+// const secrets = require('./secrets.json'); 
 
-const apikey = secrets.moviedb_apikey;
+const apikey = process.env.moviedb_apikey;
 
 // Get ID of a Movie given it's title
 // Return a promise
