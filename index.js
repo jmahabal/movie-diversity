@@ -252,6 +252,10 @@ const checkIfPosted = function(statusData) {
 const releases = require('./releases.json'); 
 const releaseDates = _.toPairs(releases);
 
+cron.schedule('*/5 * * * * *', function() {
+	console.log("Hello, world!");
+}
+
 // cron.schedule('0 0 0 * * *', function() {
 
 //   releaseDates.forEach(release => {
