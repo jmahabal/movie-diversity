@@ -2,9 +2,9 @@
 	"name": "glitch-twitterbot",
 	"version": "0.0.1",
 	"description": "Application to analyze movie diversity.",
-	"main": "server.js",
+	"main": "index.js",
 	"scripts": {
-		"start": "node server.js",
+		"start": "node index.js",
 		"test": "mocha test.js"
 	},
 	"dependencies": {
