@@ -34,6 +34,4 @@ Credits
 
 [The Movie DB](https://www.themoviedb.org/documentation/api)
 
-Photo by Florian Klauer on Unsplash
-
-Photo by Andrew Ridley on Unsplash
+Twitter profile and cover photos by Florian Klauer and Andrew Ridley on Unsplash.
