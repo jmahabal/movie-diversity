@@ -21,6 +21,8 @@ The bot was created with Javascript and is currently running on a Digital Ocean 
 
 The process of creating an 'analysis' kicks off with a movie title. This title is fed into the MovieDB search API, after which the bot selects the movie that is the first result. Once there is a movie associated with the request, the bot grabs the cast members and aggregates the genders of the first 20 cast members. The cast members are billed accordingly to importance, so choosing the top 20 should lead to a accurate study, as minor characters with little screen time are not as relevant (though definitely still important!) This data then gets passed into a function that draws the bar chart on a Canvas (node-canvas helped with this). This canvas is exported as a dataURL which can then in turn be passed to Twitter. 
 
+Since the bot is also supposed to post a movie's information on its release date, we need some way to keep track of that information. Right now what I do is use Python to scrape a movie release date site and save that information to a JSON file. 
+
 The Future
 ==========
 * Expand analysis to include ethnicity information as well, in addition to other groups

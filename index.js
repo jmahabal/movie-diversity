@@ -169,15 +169,15 @@ const cron = require('node-cron');
 var moment = require('moment');
 var Twit = require('twit');
 
-const config = {
-      twitter: {
-        consumer_key: secrets.consumer_key,
-        consumer_secret: secrets.consumer_secret,
-        access_token: secrets.access_key,
-        access_token_secret: secrets.access_secret
-      }
-    };
-const T = new Twit(config.twitter);
+// const config = {
+//       twitter: {
+//         consumer_key: secrets.consumer_key,
+//         consumer_secret: secrets.consumer_secret,
+//         access_token: secrets.access_key,
+//         access_token_secret: secrets.access_secret
+//       }
+//     };
+// const T = new Twit(config.twitter);
 
 const generateTweet = function(castMemberCount, movieTitle, movieYear, data, movieId) {
 	let majority = _.filter(data, x => x[1] > castMemberCount/2);
@@ -192,43 +192,43 @@ const generateAltText = function(pairedData) {
 	return pairedData.map(x => `${x[0]}s: ${x[1]}`).join("; ");
 }
 
-const postToTwitter = function(statusData) {
+// const postToTwitter = function(statusData) {
 
-	T.post('media/upload', { media_data: statusData.dataUrl }, function (err, data, response) {
-		// now we can assign alt text to the media, for use by screen readers and
-		// other text-based presentations and interpreters
-		let mediaIdStr = data.media_id_string;
-		let altText = generateAltText(statusData.breakdown);
-		console.log(altText);
-		let meta_params = { media_id: mediaIdStr, alt_text: { text: altText } }
+// 	T.post('media/upload', { media_data: statusData.dataUrl }, function (err, data, response) {
+// 		// now we can assign alt text to the media, for use by screen readers and
+// 		// other text-based presentations and interpreters
+// 		let mediaIdStr = data.media_id_string;
+// 		let altText = generateAltText(statusData.breakdown);
+// 		console.log(altText);
+// 		let meta_params = { media_id: mediaIdStr, alt_text: { text: altText } }
 
-		T.post('media/metadata/create', meta_params, function (err, data, response) {
-		  if (!err) {
-		    // now we can reference the media and post a tweet (media will attach to the tweet)
-		    let status = generateTweet(statusData.castMemberCount, statusData.movieTitle, 
-		    						   statusData.movieYear, statusData.breakdown, statusData.movieId);
-		    console.log(status);
+// 		T.post('media/metadata/create', meta_params, function (err, data, response) {
+// 		  if (!err) {
+// 		    // now we can reference the media and post a tweet (media will attach to the tweet)
+// 		    let status = generateTweet(statusData.castMemberCount, statusData.movieTitle, 
+// 		    						   statusData.movieYear, statusData.breakdown, statusData.movieId);
+// 		    console.log(status);
 
-		    let params = { status: status, media_ids: [mediaIdStr] }
-		    if (statusData.replyTo && statusData.statusId) {
-			    params['status'] = `@${statusData.replyTo} ${status}`;
-			    params['in_reply_to_status_id'] = statusData.statusId;
-		    } else { // If we are posting to the main timeline, record that we've done so.
-				let postedMovies = JSON.parse(fs.readFileSync('posted.json', 'utf8'));
-				jsonfile.writeFile('posted.json', postedMovies.concat([[statusData.movieId, moment().format('L')]]), function(err) {
-				  let errorMessage = _.isNull(err) 
-				  				   ? `Edited the already-posted json file.`
-				                   : `Could not write to already-posted json file because ${err}`;
-				  console.error(errorMessage);
-				})
-		    }
-		    T.post('statuses/update', params, function (err, data, response) {
-		      console.log("posted to twitter!")
-		    })
-		  }
-		})
-	})
-}
+// 		    let params = { status: status, media_ids: [mediaIdStr] }
+// 		    if (statusData.replyTo && statusData.statusId) {
+// 			    params['status'] = `@${statusData.replyTo} ${status}`;
+// 			    params['in_reply_to_status_id'] = statusData.statusId;
+// 		    } else { // If we are posting to the main timeline, record that we've done so.
+// 				let postedMovies = JSON.parse(fs.readFileSync('posted.json', 'utf8'));
+// 				jsonfile.writeFile('posted.json', postedMovies.concat([[statusData.movieId, moment().format('L')]]), function(err) {
+// 				  let errorMessage = _.isNull(err) 
+// 				  				   ? `Edited the already-posted json file.`
+// 				                   : `Could not write to already-posted json file because ${err}`;
+// 				  console.error(errorMessage);
+// 				})
+// 		    }
+// 		    T.post('statuses/update', params, function (err, data, response) {
+// 		      console.log("posted to twitter!")
+// 		    })
+// 		  }
+// 		})
+// 	})
+// }
 
 const checkIfPosted = function(statusData) {
 
@@ -252,43 +252,43 @@ const checkIfPosted = function(statusData) {
 const releases = require('./releases.json'); 
 const releaseDates = _.toPairs(releases);
 
-cron.schedule('0 0 0 * * *', function() {
+// cron.schedule('0 0 0 * * *', function() {
 
-  releaseDates.forEach(release => {
-  	if (moment().isSame(moment(release[1]), 'day')) {
+//   releaseDates.forEach(release => {
+//   	if (moment().isSame(moment(release[1]), 'day')) {
 
-		getID(release[0])
-		// getID("harry potter stone")
-			.then((movie) => {
-				getCastFromId(movie.id)
-					.then(genders => {
-						let year = movie.releaseDate.split("-")[0];
-						let dataUrl = generateCanvas(_.toPairs(genders), `${movie.title}`, year, castLimit);
-					    let statusData = {
-					      "castMemberCount": castLimit,
-					      "movieTitle": movie.title,
-					      "movieYear": year,
-					      "breakdown": _.toPairs(genders),
-					      "dataUrl": dataUrl.split(",")[1],
-					      "movieId": movie.id
-					    }
-					    // console.log(dataUrl);
-					    checkIfPosted(statusData);
-					})
-					.catch(e => {
-						// Tweet saying that not enough data on cast members was found.
-						console.log("e3", e)
-					});
-			})
-			.catch(e => {
-				// Tweet saying that the movie was not found.
-				console.log("e2", e)
-			});
+// 		getID(release[0])
+// 		// getID("harry potter stone")
+// 			.then((movie) => {
+// 				getCastFromId(movie.id)
+// 					.then(genders => {
+// 						let year = movie.releaseDate.split("-")[0];
+// 						let dataUrl = generateCanvas(_.toPairs(genders), `${movie.title}`, year, castLimit);
+// 					    let statusData = {
+// 					      "castMemberCount": castLimit,
+// 					      "movieTitle": movie.title,
+// 					      "movieYear": year,
+// 					      "breakdown": _.toPairs(genders),
+// 					      "dataUrl": dataUrl.split(",")[1],
+// 					      "movieId": movie.id
+// 					    }
+// 					    // console.log(dataUrl);
+// 					    checkIfPosted(statusData);
+// 					})
+// 					.catch(e => {
+// 						// Tweet saying that not enough data on cast members was found.
+// 						console.log("e3", e)
+// 					});
+// 			})
+// 			.catch(e => {
+// 				// Tweet saying that the movie was not found.
+// 				console.log("e2", e)
+// 			});
 
-	};
-  })
+// 	};
+//   })
 
-});
+// });
 
 // When a user mentions (@s) the bot in a tweet, respond with the relevant info
 
@@ -300,47 +300,47 @@ const giveErrorTweet = function(message, statusId, replyTo) {
 }
 
 const username = '@moviediversity';
-var stream = T.stream('statuses/filter', { track: username });
+// var stream = T.stream('statuses/filter', { track: username });
 
-stream.on('tweet', function (tweet) {
-  let replyTo = tweet.user.screen_name;
-  let statusId = tweet.id_str;
-  let tweetText = _.filter(tweet.text.split(" "), x => x.charAt(0) != '@').join(" ");
+// stream.on('tweet', function (tweet) {
+//   let replyTo = tweet.user.screen_name;
+//   let statusId = tweet.id_str;
+//   let tweetText = _.filter(tweet.text.split(" "), x => x.charAt(0) != '@').join(" ");
 
-  // When mentioned, respond, but start with the username.
-  getID(tweetText)
-	  .then((movie) => {
-	    getCastFromId(movie.id)
-			.then(genders => {
-				let year = movie.releaseDate.split("-")[0];
-				let dataUrl = generateCanvas(_.toPairs(genders), `${movie.title}`, year, castLimit);
-			    let statusData = {
-			      "castMemberCount": castLimit,
-			      "movieTitle": movie.title,
-			      "movieYear": year,
-			      "breakdown": _.toPairs(genders),
-			      "dataUrl": dataUrl.split(",")[1],
-			      "movieId": movie.id
-			    }
-			    checkIfPosted(statusData);
-			    replyToStatusData = JSON.parse(JSON.stringify(statusData))
-		        replyToStatusData["replyTo"] = replyTo;
-			    replyToStatusData["statusId"] = statusId;
-	  			postToTwitter(replyToStatusData); // Post again to the general timeline
-			})
-			.catch(e => {
-				// Tweet saying that not enough data on cast members was found.
-				giveErrorTweet(e, statusId, replyTo);
-			});
-	})
-	.catch(e => {
-		// Tweet saying that the movie was not found.
-		giveErrorTweet(e, statusId, replyTo);
-	});
+//   // When mentioned, respond, but start with the username.
+//   getID(tweetText)
+// 	  .then((movie) => {
+// 	    getCastFromId(movie.id)
+// 			.then(genders => {
+// 				let year = movie.releaseDate.split("-")[0];
+// 				let dataUrl = generateCanvas(_.toPairs(genders), `${movie.title}`, year, castLimit);
+// 			    let statusData = {
+// 			      "castMemberCount": castLimit,
+// 			      "movieTitle": movie.title,
+// 			      "movieYear": year,
+// 			      "breakdown": _.toPairs(genders),
+// 			      "dataUrl": dataUrl.split(",")[1],
+// 			      "movieId": movie.id
+// 			    }
+// 			    checkIfPosted(statusData);
+// 			    replyToStatusData = JSON.parse(JSON.stringify(statusData))
+// 		        replyToStatusData["replyTo"] = replyTo;
+// 			    replyToStatusData["statusId"] = statusId;
+// 	  			postToTwitter(replyToStatusData); // Post again to the general timeline
+// 			})
+// 			.catch(e => {
+// 				// Tweet saying that not enough data on cast members was found.
+// 				giveErrorTweet(e, statusId, replyTo);
+// 			});
+// 	})
+// 	.catch(e => {
+// 		// Tweet saying that the movie was not found.
+// 		giveErrorTweet(e, statusId, replyTo);
+// 	});
 
-  console.log(`tweet detected: ${tweetText}`);
+//   console.log(`tweet detected: ${tweetText}`);
 
-});
+// });
 
 //// ANALYSIS ////
 
@@ -373,3 +373,7 @@ stream.on('tweet', function (tweet) {
 // Readme
 // add na if there are none
 // make sure im grabbing the last date for a movie, not the first
+
+module.exports = {
+  generateAltText
+}
