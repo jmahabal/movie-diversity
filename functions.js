@@ -68,7 +68,7 @@ const generateCanvas = function generateCanvas(data, title, year, castMemberCoun
     const height = 160;
     const margin = {top: 40, bottom: 40, right: 40, left: 85};
 
-    let Canvas = require('canvas');
+    let Canvas = require('canvas-prebuilt');
     let canvas = new Canvas(width + margin.left + margin.right, height + margin.top + margin.bottom);
     let ctx = canvas.getContext('2d');
     // ctx.scale(2, 2);
