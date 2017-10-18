@@ -17,6 +17,7 @@
 		"node-cron": "^1.2.0",
 		"request": "latest",
 		"request-promise-native": "latest",
+		"sharp": "^0.18.4",
 		"twit": "^2.2.9"
 	},
 	"engines": {

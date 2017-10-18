@@ -3,6 +3,7 @@
 var rpn = require('request-promise-native'); 
 var _ = require('lodash'); 
 var d3 = require('d3');
+var sharp = require('sharp');
 
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
