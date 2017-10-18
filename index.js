@@ -41,9 +41,9 @@ const getID = function(movieTitle) {
 // Using the API specs
 const determineGender = function(gender) {
 	if (gender === 1) {
-		return 'Female';
+		return 'Women';
 	} else if (gender === 2) {
-		return 'Male';
+		return 'Men';
 	} 
 	return 'Unknown';
 }
@@ -92,7 +92,7 @@ const generateCanvas = function(data, title, year, castMemberCount) {
     ctx.translate(margin.left + 0.5, margin.top + 0.5);
 
     let xScale = d3.scaleLinear().domain([0, castMemberCount]).range([0, width]);
-    let yScale = d3.scaleBand().domain(["Female", "Male", "Unknown"]).range([0, height]).paddingOuter(0.3).paddingInner(0.3);
+    let yScale = d3.scaleBand().domain(["Women", "Men", "Unknown"]).range([0, height]).paddingOuter(0.3).paddingInner(0.3);
 
     let xTickCount = 5;
     let xTicks = xScale.ticks(xTickCount);
@@ -179,13 +179,17 @@ const config = {
     };
 const T = new Twit(config.twitter);
 
+const titleToHashtag = function titleToHashtag(title) {
+	return '#' + title.split(' ').map(t => t.replace(/[^a-z0-9]/gi, '')).map(t => t && t[0].toUpperCase() + t.slice(1)).join('');
+}
+
 const generateTweet = function(castMemberCount, movieTitle, movieYear, data, movieId) {
 	let majority = _.filter(data, x => x[1] > castMemberCount/2);
-	let max = _.filter(data, y => y[1] === _.maxBy(data, x => parseInt(x[1]))[1]).map(z => z[0].toLowerCase()).join(' or ');
+	let max = _.filter(data, y => y[1] === _.maxBy(data, x => parseInt(x[1]))[1]).map(z => z[0].toLowerCase()).sort().reverse().join(' or ').replace('unknown', 'of unknown gender');
 	let largestCohortText = _.isEmpty(majority) 
 						  ? `the plurality were ${max}`
 						  : `the majority were ${majority[0][0].toLowerCase()}`;
-	return `Of the ${castMemberCount} top-billed cast members in ${movieTitle} (${movieYear}), ${largestCohortText}.\n\nhttps://www.themoviedb.org/movie/${movieId}`;
+	return `Of the ${castMemberCount} top-billed cast members in ${titleToHashtag(movieTitle)} (${movieYear}), ${largestCohortText}.\n\nhttps://www.themoviedb.org/movie/${movieId}`;
 }
 
 const generateAltText = function(pairedData) {
@@ -251,6 +255,39 @@ const checkIfPosted = function(statusData) {
 
 const releases = require('./releases.json'); 
 const releaseDates = _.toPairs(releases);
+
+
+// test
+
+// getID("the foreigner")
+// 			.then((movie) => {
+// 				getCastFromId(movie.id)
+// 					.then(genders => {
+// 						let year = movie.releaseDate.split("-")[0];
+// 						let dataUrl = generateCanvas(_.toPairs(genders), `${movie.title}`, year, castLimit);
+// 					    let statusData = {
+// 					      "castMemberCount": castLimit,
+// 					      "movieTitle": movie.title,
+// 					      "movieYear": year,
+// 					      "breakdown": _.toPairs(genders),
+// 					      "dataUrl": dataUrl.split(",")[1],
+// 					      "movieId": movie.id
+// 					    }
+// 					    // console.log(statusData);
+// 					    console.log(generateTweet(statusData.castMemberCount, statusData.movieTitle, statusData.movieYear, statusData.breakdown, statusData.movieId))
+// 					    // checkIfPosted(statusData);
+// 					})
+// 					.catch(e => {
+// 						// Tweet saying that not enough data on cast members was found.
+// 						console.log("e3", e)
+// 					});
+// 			})
+// 			.catch(e => {
+// 				// Tweet saying that the movie was not found.
+// 				console.log("e2", e)
+// 			});
+
+// start
 
 cron.schedule('0 0 0 * * *', function() {
 
@@ -341,6 +378,8 @@ stream.on('tweet', function (tweet) {
   console.log(`tweet detected: ${tweetText}`);
 
 });
+
+//  end
 
 //// ANALYSIS ////
 
