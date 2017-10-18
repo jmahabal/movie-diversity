@@ -17,6 +17,7 @@ const getID = function(movieTitle, apikey) {
 		let baseUrl = 'https://api.themoviedb.org/3/search/movie?api_key=' + apikey + '&query=';
 		rpn.get(baseUrl+movieTitle.split(' ').join('+'))
 		  .then(response => {
+            console.log('Response from TMDB', response);
 		  	let movie = JSON.parse(response).results[0];
 		  	resolve({id: movie.id, title: movie.title, releaseDate: movie.release_date});
 		  })
@@ -97,7 +98,7 @@ const generateCanvas = function generateCanvas(data, title, year, castMemberCoun
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.font = '10px Roboto';
+    ctx.font = '10px Arial';
     xTicks.forEach(function(d) {
       ctx.fillText(d, xScale(d), height + 8);
     });
@@ -108,7 +109,7 @@ const generateCanvas = function generateCanvas(data, title, year, castMemberCoun
     ctx.stroke();
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.font = '12px Roboto';
+    ctx.font = '12px Arial';
 
     yScale.domain().forEach(function(d) {
       ctx.fillText(d, -12 + 0.5, yScale(d) + yScale.bandwidth() / 2  + 0.5);
@@ -127,12 +128,12 @@ const generateCanvas = function generateCanvas(data, title, year, castMemberCoun
     ctx.save();
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.font = '10px Roboto';
+    ctx.font = '10px Arial';
     ctx.fillText(`Top ${castMemberCount} Billed Cast Members`, width, height - 4);
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.font = '16px Roboto';
+    ctx.font = '16px Arial';
     ctx.fillText(`${title} (${year})`, width/2, -6);
 
     ctx.restore();
