@@ -168,7 +168,7 @@ const giveErrorTweet = function giveErrorTweet(message, statusId, replyTo) {
   });
 };
 
-const username = '@lelebronbot';
+const username = process.env.twittername;
 var stream = T.stream('statuses/filter', { track: username });
 
 stream.on('tweet', function (tweet) {
