@@ -5,10 +5,6 @@ var _ = require('lodash');
 var d3 = require('d3');
 var sharp = require('sharp');
 
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-}
-
 const castLimit = 20;
 
 // Get ID of a Movie given it's title
@@ -18,7 +14,6 @@ const getID = function(movieTitle, apikey) {
 		let baseUrl = 'https://api.themoviedb.org/3/search/movie?api_key=' + apikey + '&query=';
 		rpn.get(baseUrl+movieTitle.split(' ').join('+'))
 		  .then(response => {
-            console.log('Response from TMDB', response);
 		  	let movie = JSON.parse(response).results[0];
 		  	resolve({id: movie.id, title: movie.title, releaseDate: movie.release_date});
 		  })
@@ -52,7 +47,10 @@ const getCastFromId = function(movieId, apikey) {
 			  	resolve(_.countBy(JSON.parse(response).credits.cast.splice(0, castLimit).map(x => determineGender(x.gender))));
 		  	}
 	  		reject(`I could not gather enough information on the cast members of this film.`);
-		  });
+		  })
+          .catch(() => {
+            reject(`I could not find this film.`);
+          });
 	});
 };
 

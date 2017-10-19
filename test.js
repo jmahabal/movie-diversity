@@ -1,9 +1,19 @@
 'use strict';
 
 var chai = require('chai');
+var chaiAsPromised = require('chai-as-promised');
+
+chai.should();
+chai.use(chaiAsPromised);
 const expect = chai.expect;
+const assert = chai.assert;
 
 const functions = require('./functions.js');
+
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+const apikey = process.env.apikey;
 
 // generateAltText
 
@@ -13,16 +23,30 @@ describe('generateAltText should generate some backup text', () => {
     });
     it('should return valid text', () => {
       const expectedText = 'Women: 12; Men: 4; Unknown: 4';
-      expect(functions.generateAltText([['Women', 12], ['Men', 4], ['Unknown', 4]]) === expectedText).to.be.true;
+      assert.equal(functions.generateAltText([['Women', 12], ['Men', 4], ['Unknown', 4]]), expectedText);
     });
     it('should not use outdated gender language', () => {
-      const unExpectedText = 'Females: 12; Males: 4; Unknown: 4';
-      expect(functions.generateAltText([['Women', 12], ['Men', 4], ['Unknown', 4]]) === unExpectedText).to.be.false;
+      const expectedText = 'Females: 12; Males: 4; Unknown: 4';
+      assert.notEqual(functions.generateAltText([['Women', 12], ['Men', 4], ['Unknown', 4]]), expectedText);
     });
 });
 
 // getID
 
+describe('getID should return the appropiate ID from a movie title', () => {
+  it('should error out when given a bad string', function() {
+    return assert.isRejected(functions.getID('blahblahblah', apikey));
+  });
+  it('should NOT error out when given a good string', function() {
+    return assert.isFulfilled(functions.getID('space jam', apikey));
+  });
+  it('should return the title and id for, say, blade runner 2049', function() {
+    return functions.getID('blade runner 2049', apikey).then(data => {
+        assert.equal(data.title, 'Blade Runner 2049');
+        assert.equal(data.id.toString(), '335984');
+    });
+  });
+});
 
 // determineGender
 
@@ -31,38 +55,47 @@ describe('determineGender should sort into buckets correctly', () => {
       expect(functions.determineGender).to.be.a('function');
     });
     it('should sort returned gender into women', () => {
-      expect(functions.determineGender(1) === 'Women').to.be.true;
+      assert.equal(functions.determineGender(1), 'Women');
     });
     it('should not use outdated gender language', () => {
-      expect(functions.determineGender(1) === 'Female').to.be.false;
+      assert.notEqual(functions.determineGender(1), 'Female');
     });
     it('should sort returned gender into men', () => {
-      expect(functions.determineGender(2) === 'Men').to.be.true;
+      assert.equal(functions.determineGender(2), 'Men');
     });
     it('should consider strings invalid data, even if number', () => {
-	    expect(functions.determineGender('1') === 'Unknown').to.be.true;
+	    assert.equal(functions.determineGender('1'), 'Unknown');
     });
     it('should think strings are invalid', () => {
-      expect(functions.determineGender('Hello') === 'Unknown').to.be.true;
+      assert.equal(functions.determineGender('Hello'), 'Unknown');
     });
     it('should think empty arguments are unknown gender', () => {
-      expect(functions.determineGender() === 'Unknown').to.be.true;
+      assert.equal(functions.determineGender(), 'Unknown');
     });
     it('should think null arguments are unknown gender', () => {
-      expect(functions.determineGender(null) === 'Unknown').to.be.true;
+      assert.equal(functions.determineGender(null), 'Unknown');
     });
 });
 
-// generateTweet
+// getCastFromId
+// Note: this test may fail if the movie is updated (hence why we choose an older one)
 
-// const generateTweet = function generateTweet(castMemberCount, movieTitle, movieYear, data, movieId, titleToHashtag) {
-//   let majority = _.filter(data, x => x[1] > castMemberCount/2);
-//     let max = _.filter(data, y => y[1] === _.maxBy(data, x => parseInt(x[1]))[1]).map(z => z[0].toLowerCase()).sort().reverse().join(' or ').replace('unknown', 'of unknown gender');
-//   let largestCohortText = _.isEmpty(majority) 
-//               ? `the plurality were ${max}`
-//               : `the majority were ${majority[0][0].toLowerCase()}`;
-//   return `Of the ${castMemberCount} top-billed cast members in ${titleToHashtag(movieTitle)} (${movieYear}), ${largestCohortText}.\n\nhttps://www.themoviedb.org/movie/${movieId}`;
-// };
+describe('getCastFromId should return the cast distribution', () => {
+  it('should error out when given a bad string', function() {
+    return assert.isRejected(functions.getCastFromId('123123', apikey));
+  });
+  it('should NOT error out when given a good string', function() {
+    return assert.isFulfilled(functions.getCastFromId('68726', apikey));
+  });
+  it('should correctly return the distribution for, say, HPGoF', function() {
+    return functions.getCastFromId('674', apikey).then(data => {
+        assert.equal(data.Men, 14);
+        assert.equal(data.Women, 6);
+    });
+  });
+});
+
+// generateTweet
 
 describe('generateTweet should return valid tweet text', () => {
     it('should be a function', () => {
@@ -76,7 +109,7 @@ describe('generateTweet should return valid tweet text', () => {
       const movieId = '2300';
       const titleToHashtag = functions.titleToHashtag;
       const expectedText = 'Of the 20 top-billed cast members in #SpaceJam (1996), the plurality were of unknown gender.\n\nhttps://www.themoviedb.org/movie/2300';
-      expect(functions.generateTweet(castMemberCount, movieTitle, movieYear, data, movieId, titleToHashtag) === expectedText).to.be.true;
+      assert.equal(functions.generateTweet(castMemberCount, movieTitle, movieYear, data, movieId, titleToHashtag), expectedText);
     });
     it('should handle a majority', () => {
       const castMemberCount = 20;
@@ -86,7 +119,7 @@ describe('generateTweet should return valid tweet text', () => {
       const movieId = '2300';
       const titleToHashtag = functions.titleToHashtag;
       const expectedText = 'Of the 20 top-billed cast members in #SpaceJam (1996), the majority were men.\n\nhttps://www.themoviedb.org/movie/2300';
-      expect(functions.generateTweet(castMemberCount, movieTitle, movieYear, data, movieId, titleToHashtag) === expectedText).to.be.true;
+      assert.equal(functions.generateTweet(castMemberCount, movieTitle, movieYear, data, movieId, titleToHashtag), expectedText);
     });
     it('should handle ties', () => {
       const castMemberCount = 20;
@@ -96,7 +129,7 @@ describe('generateTweet should return valid tweet text', () => {
       const movieId = '2300';
       const titleToHashtag = functions.titleToHashtag;
       const expectedText = 'Of the 20 top-billed cast members in #SpaceJam (1996), the plurality were of unknown gender or men.\n\nhttps://www.themoviedb.org/movie/2300';
-      expect(functions.generateTweet(castMemberCount, movieTitle, movieYear, data, movieId, titleToHashtag) === expectedText).to.be.true;
+      assert.equal(functions.generateTweet(castMemberCount, movieTitle, movieYear, data, movieId, titleToHashtag), expectedText);
     });
 });
 
@@ -107,22 +140,22 @@ describe('titleToHashtag should convert a title into a hashtag', () => {
       expect(functions.titleToHashtag).to.be.a('function');
     });
     it('should add the hash', () => {
-      expect(functions.titleToHashtag('Marshall') === '#Marshall').to.be.true;
+      assert.equal(functions.titleToHashtag('Marshall'), '#Marshall');
     });
     it('should remove spaces', () => {
-      expect(functions.titleToHashtag('Harry Potter') === '#HarryPotter').to.be.true;
+      assert.equal(functions.titleToHashtag('Harry Potter'), '#HarryPotter');
     });
     it('should capitalize properly', () => {
       const expectedText = '#HarryPotterAndTheGobletOfFire';
-      expect(functions.titleToHashtag('Harry Potter and the Goblet of Fire ') === expectedText).to.be.true;
+      assert.equal(functions.titleToHashtag('Harry Potter and the Goblet of Fire '), expectedText);
     });
     it('should remove weird characters (numbers are fine)', () => {
       const expectedText = '#30for30';
-      expect(functions.titleToHashtag('<3,.0>;?%{f}oâr~3|0`#!@$_^%$(*)"') === expectedText).to.be.true;
+      assert.equal(functions.titleToHashtag('<3,.0>;?%{f}oâr~3|0`#!@$_^%$(*)"'), expectedText);
     });
     it('should do all of the above, combined', () => {
       const expectedText = '#ProfessorMarstonTheWonderWoman';
-      expect(functions.titleToHashtag('Professor Marston & the Wonder Woman') === expectedText).to.be.true;
+      assert.equal(functions.titleToHashtag('Professor Marston & the Wonder Woman'), expectedText);
     });
 });
 
