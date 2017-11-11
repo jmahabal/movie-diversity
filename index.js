@@ -176,35 +176,38 @@ stream.on('tweet', function (tweet) {
   let statusId = tweet.id_str;
   let tweetText = _.filter(tweet.text.split(' '), x => x.charAt(0) !== '@').join(' ');
 
-  // When mentioned, respond, but start with the username.
-  functions.getID(tweetText, apikey)
-   .then((movie) => {
-      functions.getCastFromId(movie.id, apikey)
-        .then(genders => {
-          let year = movie.releaseDate.split('-')[0];
-          let dataUrl = functions.generateCanvas(_.toPairs(genders), `${movie.title}`, year, castLimit);
-          let statusData = {
-            'castMemberCount': castLimit,
-            'movieTitle': movie.title,
-            'movieYear': year,
-            'breakdown': _.toPairs(genders),
-            'dataUrl': dataUrl.split(',')[1],
-            'movieId': movie.id
-          };
-          checkIfPosted(statusData);
-          let replyToStatusData = JSON.parse(JSON.stringify(statusData));
-          replyToStatusData.replyTo = replyTo;
-          replyToStatusData.statusId = statusId;
-          postToTwitter(replyToStatusData); // Post again to the general timeline
-      })
+  if (replyTo !== 'moviediversity') {
+    // When mentioned, respond, but start with the username.
+    functions.getID(tweetText, apikey)
+     .then((movie) => {
+        functions.getCastFromId(movie.id, apikey)
+          .then(genders => {
+            let year = movie.releaseDate.split('-')[0];
+            let dataUrl = functions.generateCanvas(_.toPairs(genders), `${movie.title}`, year, castLimit);
+            let statusData = {
+              'castMemberCount': castLimit,
+              'movieTitle': movie.title,
+              'movieYear': year,
+              'breakdown': _.toPairs(genders),
+              'dataUrl': dataUrl.split(',')[1],
+              'movieId': movie.id
+            };
+            checkIfPosted(statusData);
+            let replyToStatusData = JSON.parse(JSON.stringify(statusData));
+            replyToStatusData.replyTo = replyTo;
+            replyToStatusData.statusId = statusId;
+            postToTwitter(replyToStatusData); // Post again to the general timeline
+        })
+      .catch(e => {
+        // Tweet saying that not enough data on cast members was found.
+        giveErrorTweet(e, statusId, replyTo);
+      });
+    })
     .catch(e => {
-      // Tweet saying that not enough data on cast members was found.
+      // Tweet back saying that the movie was not found.
       giveErrorTweet(e, statusId, replyTo);
     });
-  })
-  .catch(e => {
-    // Tweet back saying that the movie was not found.
-    giveErrorTweet(e, statusId, replyTo);
-  });
-  console.log(`tweet detected: ${tweetText}`);
+    console.log(`tweet detected: ${tweetText}`);
+  }
+  
 });
