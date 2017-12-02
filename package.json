@@ -2,21 +2,22 @@
 	"name": "glitch-twitterbot",
 	"version": "0.0.1",
 	"description": "Application to analyze movie diversity.",
-	"main": "server.js",
+	"main": "index.js",
 	"scripts": {
-		"start": "node server.js"
+		"start": "node index.js",
+		"test": "mocha test.js"
 	},
 	"dependencies": {
-		"canvas": "^1.6.6",
+		"canvas-prebuilt": "^1.6.5-prerelease.1",
 		"d3": "^4.10.0",
 		"fs": "latest",
 		"jsonfile": "^3.0.1",
 		"lodash": "^4.17.4",
 		"moment": "^2.18.1",
 		"node-cron": "^1.2.0",
-		"node-gyp": "^3.6.2",
 		"request": "latest",
 		"request-promise-native": "latest",
+		"sharp": "^0.18.4",
 		"twit": "^2.2.9"
 	},
 	"engines": {
@@ -25,5 +26,11 @@
 	"repository": {
 		"url": ""
 	},
-	"keywords": []
+	"keywords": [],
+	"devDependencies": {
+		"chai": "^4.1.2",
+		"chai-as-promised": "^7.1.1",
+		"dotenv": "^4.0.0",
+		"mocha": "^4.0.1"
+	}
 }
