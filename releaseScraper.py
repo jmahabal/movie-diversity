@@ -5,7 +5,7 @@ import requests
 import json
 import datetime
 
-r = requests.get('http://www.the-numbers.com/movies/release-schedule/2017')
+r = requests.get('http://www.the-numbers.com/movies/release-schedule/2018')
 soup = BeautifulSoup(r.text, 'html.parser')
 
 releases = {}
